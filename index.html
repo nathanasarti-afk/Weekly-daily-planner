@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Weekly day planner</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: a coach's game sheet. Box score and add-a-commitment form on top, the week's time grid below. */
+:root {
+  --bg: #f3f5f8; --surface: #ffffff; --fg: #17202c; --muted: #52606f; --line: #d3dae3; --accent: #1d4fa8;
+  --fixed-a: #e2e7ee; --fixed-b: #d3dae3; --fixed-fg: #3a4654;
+  --workout: #cfe0fb; --film: #e3d6f7; --clean: #c7ecdc; --content: #fbe3b8; --errand: #f6d3cb; --planning: #1d4fa8;
+  --varsity-a: #f5d0d5; --varsity-b: #ecbcc3; --varsity-edge: #b3263a;
+  --storm-a: #cdeaf0; --storm-b: #b9e0e8; --storm-edge: #127287;
+  --block-fg: #17202c; --planning-fg: #ffffff;
+  --good-bg: #cdeedd; --good-fg: #0e4a30; --short-bg: #fbdcd5; --short-fg: #7a2413;
+  --display: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+  --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  --hour: 60px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161d; --surface: #1a212b; --fg: #e8edf3; --muted: #a3afbd; --line: #333e4b; --accent: #8db4f5;
+    --fixed-a: #272f3a; --fixed-b: #303a47; --fixed-fg: #c2ccd8;
+    --workout: #24406e; --film: #46356b; --clean: #1d5240; --content: #63491a; --errand: #6b3429; --planning: #8db4f5;
+    --varsity-a: #4a2229; --varsity-b: #5a2a32; --varsity-edge: #f08a99;
+    --storm-a: #173c45; --storm-b: #1d4853; --storm-edge: #6fd0e3;
+    --block-fg: #eef2f7; --planning-fg: #11161d;
+    --good-bg: #1d5240; --good-fg: #d3f3e3; --short-bg: #6b3429; --short-fg: #fde3dc;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161d; --surface: #1a212b; --fg: #e8edf3; --muted: #a3afbd; --line: #333e4b; --accent: #8db4f5;
+  --fixed-a: #272f3a; --fixed-b: #303a47; --fixed-fg: #c2ccd8;
+  --workout: #24406e; --film: #46356b; --clean: #1d5240; --content: #63491a; --errand: #6b3429; --planning: #8db4f5;
+  --varsity-a: #4a2229; --varsity-b: #5a2a32; --varsity-edge: #f08a99;
+  --storm-a: #173c45; --storm-b: #1d4853; --storm-edge: #6fd0e3;
+  --block-fg: #eef2f7; --planning-fg: #11161d;
+  --good-bg: #1d5240; --good-fg: #d3f3e3; --short-bg: #6b3429; --short-fg: #fde3dc;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.45; }
+* { box-sizing: border-box; }
+.page {
+  max-width: 1180px; margin: 0 auto; display: grid; gap: 24px;
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+header { display: grid; gap: 6px; }
+.title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 40px; line-height: 1.05; text-wrap: balance; }
+h2 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: .01em; }
+.tag { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border: 1.5px solid var(--accent); color: var(--accent); border-radius: 3px; }
+.lede { margin: 0; color: var(--muted); max-width: 68ch; }
+.top { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 24px; align-items: start; }
+.panel { display: grid; gap: 12px; min-width: 0; }
+table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+.swatch { display: inline-block; width: 12px; height: 12px; margin-right: 8px; border: 1px solid var(--line); vertical-align: -1px; }
+.status { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 3px; }
+.status.met { background: var(--good-bg); color: var(--good-fg); }
+.status.short { background: var(--short-bg); color: var(--short-fg); }
+form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; background: var(--surface); border: 1px solid var(--line); padding: 14px; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field.wide { grid-column: 1 / -1; }
+label { font-size: 13px; font-weight: 500; color: var(--muted); }
+input, select { width: 100%; min-width: 0; min-height: 44px; padding: 8px; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 3px; }
+.actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; }
+button { min-height: 44px; padding: 8px 16px; font: inherit; font-weight: 600; border-radius: 3px; cursor: pointer; border: 1.5px solid var(--accent); }
+button.primary { background: var(--accent); color: var(--bg); }
+button.secondary { background: transparent; color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.message { grid-column: 1 / -1; margin: 0; font-size: 14px; color: var(--muted); min-height: 1.45em; }
+.message.error { color: var(--short-fg); font-weight: 500; }
+.note { margin: 0; font-size: 13px; color: var(--muted); max-width: 72ch; }
+.scroller { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); }
+.week { display: grid; grid-template-columns: 52px repeat(7, minmax(92px, 1fr)); min-width: 716px; }
+.dayhead { padding: 8px; font-family: var(--display); font-weight: 700; font-size: 18px; text-align: center; border-bottom: 1px solid var(--line); border-left: 1px solid var(--line); }
+.corner { border-bottom: 1px solid var(--line); }
+.hours { position: relative; height: calc(var(--hour) * 15.5); }
+.hourlabel { position: absolute; right: 6px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; transform: translateY(-1px); }
+.daycol {
+  position: relative; height: calc(var(--hour) * 15.5); border-left: 1px solid var(--line);
+  background-image: linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: 100% var(--hour);
+}
+.block { position: absolute; left: 3px; right: 3px; overflow: hidden; padding: 1px 5px; font-size: 12px; line-height: 1.2; border-radius: 2px; color: var(--block-fg); }
+.block b { font-weight: 600; }
+.block span { display: block; font-size: 11px; font-variant-numeric: tabular-nums; }
+.block.tiny { font-size: 11px; line-height: 13px; padding-block: 0; min-height: 13px; }
+.block.tiny span { display: none; }
+.block.fixed { color: var(--fixed-fg); background: repeating-linear-gradient(135deg, var(--fixed-a) 0 6px, var(--fixed-b) 6px 12px); }
+.workout { background: var(--workout); }
+.film { background: var(--film); }
+.clean { background: var(--clean); }
+.content { background: var(--content); }
+.errand { background: var(--errand); }
+.planning { background: var(--planning); }
+.block.planning { color: var(--planning-fg); }
+.lightsout { position: absolute; left: 0; right: 0; height: calc(var(--hour) * .5); padding: 2px 6px; font-size: 11px; font-weight: 600; letter-spacing: .03em; background: var(--fg); color: var(--bg); }
+.block.varsity { background: repeating-linear-gradient(135deg, var(--varsity-a) 0 6px, var(--varsity-b) 6px 12px); border-left: 4px solid var(--varsity-edge); }
+.block.storm { background: repeating-linear-gradient(135deg, var(--storm-a) 0 6px, var(--storm-b) 6px 12px); border-left: 4px solid var(--storm-edge); }
+.key { display: inline-block; width: 12px; height: 12px; margin: 0 4px 0 2px; vertical-align: -1px; border: 1px solid var(--line); }
+.key.varsity { background: var(--varsity-b); border-left: 3px solid var(--varsity-edge); }
+.key.storm { background: var(--storm-b); border-left: 3px solid var(--storm-edge); }
+.key.fixed { background: var(--fixed-b); }
+@media (max-width: 820px) {
+  .top { grid-template-columns: minmax(0, 1fr); }
+  h1 { font-size: 34px; }
+}
+@media (max-width: 460px) {
+  th, td { padding: 8px; }
+  form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+</style>
+
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="title-row">
+      <h1>Weekly day planner</h1>
+      <span class="tag">Sample week</span>
+    </div>
+    <p class="lede">Your weekly targets, placed into the open time around fixed commitments. Team practices and training sessions are set as fixed commitments; add anything else below and the week re-plans around it.</p>
+  </header>
+
+  <div class="top">
+    <section class="panel" aria-labelledby="score-title">
+      <h2 id="score-title">Plan vs. targets</h2>
+      <table>
+        <thead><tr><th scope="col">Block</th><th scope="col">Planned</th><th scope="col">Target</th><th scope="col">Status</th></tr></thead>
+        <tbody id="tally"></tbody>
+      </table>
+    </section>
+
+    <section class="panel" aria-labelledby="add-title">
+      <h2 id="add-title">Add a commitment</h2>
+      <form id="add-form" novalidate>
+        <div class="field wide">
+          <label for="add-label">What is it?</label>
+          <input id="add-label" type="text" maxlength="40" value="Practice">
+        </div>
+        <div class="field">
+          <label for="add-day">Day</label>
+          <select id="add-day"></select>
+        </div>
+        <div class="field">
+          <label for="add-start">Start</label>
+          <input id="add-start" type="time" step="900" value="18:00">
+        </div>
+        <div class="field">
+          <label for="add-end">End</label>
+          <input id="add-end" type="time" step="900" value="20:00">
+        </div>
+        <div class="actions">
+          <button class="primary" type="submit" id="add-button">Add and re-plan</button>
+          <button class="secondary" type="button" id="reset-button">Clear commitments</button>
+        </div>
+        <p class="message" id="message" role="status"></p>
+      </form>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="week-title">
+    <h2 id="week-title">The week</h2>
+    <div class="scroller" tabindex="0" aria-label="Week grid, Monday to Sunday, 8am to lights out at 11pm">
+      <div class="week" id="week"></div>
+    </div>
+    <p class="note"><span class="key varsity"></span>Team A practice · <span class="key storm"></span>Team B practice · <span class="key fixed"></span>Other fixed commitments. Lifting and weights are never added; only practice times. Training is Tue–Thu at 9am. Lights out is 11pm every night; blocks are placed between 8am and lights out. Overlapping commitments are left as-is to clean up by hand. One content block is assumed, since it has no saved target.</p>
+  </section>
+</div>
+
+<script>
+(function () {
+  var DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  var DAY_START = 8 * 60, DAY_END = 23 * 60, LIGHTS_OUT = 23 * 60; // Lights out every night at 11pm.
+
+  function t(h, m) { return h * 60 + (m || 0); }
+
+  // Fixed commitments. SAMPLE DATA: replace with your own week (day 0 = Mon ... 6 = Sun, t(h, m) is 24-hour).
+  // Rule: only practice times are commitments. Lifting / weights are never added.
+  var SAMPLE = [
+    { day: 0, start: t(15, 30), end: t(17), label: 'Team A practice', kind: 'varsity' },
+    { day: 1, start: t(14), end: t(16), label: 'Team A practice', kind: 'varsity' },
+    { day: 3, start: t(15, 30), end: t(17, 30), label: 'Team A practice', kind: 'varsity' }
+  ];
+
+  // Second team's practices (sample data).
+  SAMPLE.push(
+    { day: 0, start: t(17, 30), end: t(18, 30), label: 'Team B (Gym 1)', kind: 'storm' },
+    { day: 2, start: t(17), end: t(18, 30), label: 'Team B (Gym 2)', kind: 'storm' },
+    { day: 4, start: t(17, 30), end: t(18, 45), label: 'Team B (Gym 1)', kind: 'storm' }
+  );
+
+  // Standing training: standing schedule is Tue–Thu, 9–10am, every week.
+  var TRAINING_DAYS = [1, 2, 3];
+  // This week's exceptions, by day: move training when it conflicts with something else.
+  var TRAINING_EXCEPTIONS = {};
+  TRAINING_DAYS.forEach(function (day) {
+    var slot = TRAINING_EXCEPTIONS[day] || { start: t(9), end: t(10) };
+    SAMPLE.push({ day: day, start: slot.start, end: slot.end, label: TRAINING_EXCEPTIONS[day] ? 'Training (moved)' : 'Training' });
+  });
+
+  // Placed in this order.
+  var KINDS = [
+    { kind: 'film', name: 'Film review', count: 3, mins: 60, days: [1, 3, 5, 0, 2, 4, 6], times: [t(18), t(19, 30), t(20), t(15, 30), t(8)] },
+    { kind: 'workout', name: 'Workout', count: 4, mins: 60, days: [0, 1, 3, 4, 2, 5, 6], times: [t(18), t(16), t(8), t(20)] },
+    { kind: 'content', name: 'Content', count: 1, mins: 60, days: [1, 3, 6, 4], times: [t(15, 30), t(16), t(20), t(8)] },
+    // Placed last, finished by 3pm, never within 30 minutes of any other block.
+    // One per day; if no slot fits before 3pm, that day is skipped.
+    { kind: 'clean', name: 'Clean (optional)', count: 7, mins: 10, buffer: 30, only: true, days: [0, 1, 2, 3, 4, 5, 6], times: (function () {
+      // Late morning / around lunch first, then anywhere else before 3pm.
+      var out = [t(11), t(11, 30), t(12), t(12, 30), t(10, 30), t(13), t(10), t(13, 30), t(14), t(14, 30)];
+      for (var s = t(10); s + 10 <= t(14); s += 10) if (out.indexOf(s) < 0) out.push(s);
+      for (var s2 = t(8); s2 + 10 <= t(15); s2 += 10) if (out.indexOf(s2) < 0) out.push(s2);
+      return out;
+    })() }
+  ];
+
+  function isFree(taken, day, start, end, buffer) {
+    buffer = buffer || 0;
+    if (start < DAY_START || end + buffer > DAY_END) return false;
+    return !taken.some(function (b) { return b.day === day && start - buffer < b.end && b.start < end + buffer; });
+  }
+
+  function allSteps(mins) {
+    var out = [];
+    for (var s = DAY_START; s + mins <= DAY_END; s += 15) out.push(s);
+    return out;
+  }
+
+  function findSlot(k, taken, usedDays) {
+    var everyDay = k.only ? k.days : k.days.concat([0, 1, 2, 3, 4, 5, 6].filter(function (d) { return k.days.indexOf(d) < 0; }));
+    var freshDays = everyDay.filter(function (d) { return usedDays.indexOf(d) < 0; });
+    var times = k.only ? k.times : k.times.concat(allSteps(k.mins));
+    var passes = [freshDays, k.only ? [] : everyDay];
+    for (var p = 0; p < passes.length; p++) {
+      for (var i = 0; i < passes[p].length; i++) {
+        for (var j = 0; j < times.length; j++) {
+          if (isFree(taken, passes[p][i], times[j], times[j] + k.mins, k.buffer)) return { day: passes[p][i], start: times[j] };
+        }
+      }
+    }
+    return null;
+  }
+
+  function buildPlan(fixed) {
+    var taken = fixed.slice(), placed = [];
+    KINDS.forEach(function (k) {
+      var usedDays = [];
+      for (var n = 0; n < k.count; n++) {
+        var slot = findSlot(k, taken, usedDays);
+        if (!slot) continue;
+        var block = { day: slot.day, start: slot.start, end: slot.start + k.mins, label: k.name, kind: k.kind };
+        placed.push(block); taken.push(block); usedDays.push(slot.day);
+      }
+    });
+    return placed;
+  }
+
+  function clock(m) {
+    var h = Math.floor(m / 60), mm = m % 60, suffix = h >= 12 ? 'pm' : 'am', h12 = h % 12 || 12;
+    return h12 + (mm ? ':' + String(mm).padStart(2, '0') : '') + suffix;
+  }
+
+  function hoursText(mins) {
+    var h = mins / 60;
+    return h + (h === 1 ? ' hour' : ' hours');
+  }
+
+  var ROWS = [
+    { kind: 'workout', name: 'Workouts', target: '3–4', met: function (n) { return n >= 3 && n <= 4; }, show: function (n, mins) { return n + ' (' + mins + ' min)'; } },
+    { kind: 'clean', name: 'Cleaning, 10 min (optional)', target: 'Daily before 3pm; skipped if no room', met: function () { return true; }, show: function (n) { return n + ' of 7 days'; } },
+    { kind: 'film', name: 'Film review', target: '2–3 hours', met: function (n, mins) { return mins >= 120 && mins <= 180; }, show: function (n, mins) { return hoursText(mins); } },
+    { kind: 'content', name: 'Content', target: '1 (assumed)', met: function (n) { return n >= 1; }, show: function (n) { return String(n); } }
+  ];
+
+  var added = [];
+  var tally = document.getElementById('tally');
+  var week = document.getElementById('week');
+  var message = document.getElementById('message');
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function renderTally(plan) {
+    tally.textContent = '';
+    ROWS.forEach(function (row) {
+      var blocks = plan.filter(function (b) { return b.kind === row.kind; });
+      var mins = blocks.reduce(function (sum, b) { return sum + (b.end - b.start); }, 0);
+      var met = row.met(blocks.length, mins, blocks);
+      var tr = el('tr');
+      tr.dataset.kind = row.kind;
+      var nameCell = el('td');
+      nameCell.appendChild(el('span', 'swatch ' + row.kind));
+      nameCell.appendChild(document.createTextNode(row.name));
+      var planned = el('td', '', row.show(blocks.length, mins));
+      planned.dataset.count = blocks.length;
+      planned.dataset.mins = mins;
+      var statusCell = el('td');
+      statusCell.appendChild(el('span', 'status ' + (met ? 'met' : 'short'), met ? 'Met' : 'Short'));
+      tr.appendChild(nameCell); tr.appendChild(planned); tr.appendChild(el('td', '', row.target)); tr.appendChild(statusCell);
+      tally.appendChild(tr);
+    });
+  }
+
+  function renderWeek(fixed, plan) {
+    week.textContent = '';
+    week.appendChild(el('div', 'corner'));
+    DAYS.forEach(function (d) { week.appendChild(el('div', 'dayhead', d)); });
+    var hours = el('div', 'hours');
+    for (var h = 8; h <= 23; h++) {
+      var lab = el('div', 'hourlabel', clock(h * 60));
+      lab.style.top = 'calc(var(--hour) * ' + (h - 8) + ')';
+      hours.appendChild(lab);
+    }
+    week.appendChild(hours);
+    DAYS.forEach(function (d, day) {
+      var col = el('div', 'daycol');
+      col.dataset.day = day;
+      fixed.concat(plan).filter(function (b) { return b.day === day; }).forEach(function (b) {
+        var mins = b.end - b.start;
+        var block = el('div', 'block ' + (b.kind || 'fixed') + (mins < 45 ? ' tiny' : ''));
+        block.style.top = 'calc(var(--hour) * ' + ((b.start - DAY_START) / 60) + ')';
+        block.style.height = 'calc(var(--hour) * ' + (mins / 60) + ')';
+        block.dataset.kind = b.kind || 'fixed';
+        block.dataset.day = b.day;
+        block.dataset.start = b.start;
+        block.dataset.end = b.end;
+        block.title = b.label + ', ' + DAYS[b.day] + ' ' + clock(b.start) + '–' + clock(b.end);
+        block.appendChild(el('b', '', b.label));
+        block.appendChild(el('span', '', clock(b.start) + '–' + clock(b.end)));
+        col.appendChild(block);
+      });
+      var lo = el('div', 'lightsout', 'Lights out 11pm');
+      lo.style.top = 'calc(var(--hour) * ' + ((LIGHTS_OUT - DAY_START) / 60) + ')';
+      col.appendChild(lo);
+      week.appendChild(col);
+    });
+  }
+
+  function render() {
+    var fixed = SAMPLE.concat(added);
+    var plan = buildPlan(fixed);
+    renderTally(plan);
+    renderWeek(fixed, plan);
+  }
+
+  function toMinutes(value) {
+    var parts = /^(\d\d):(\d\d)$/.exec(value || '');
+    return parts ? t(+parts[1], +parts[2]) : null;
+  }
+
+  var daySelect = document.getElementById('add-day');
+  DAYS.forEach(function (d, i) {
+    var o = el('option', '', d);
+    o.value = i;
+    daySelect.appendChild(o);
+  });
+  daySelect.value = '1';
+
+  document.getElementById('add-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var label = document.getElementById('add-label').value.trim();
+    var start = toMinutes(document.getElementById('add-start').value);
+    var end = toMinutes(document.getElementById('add-end').value);
+    var day = +daySelect.value;
+    message.className = 'message';
+    if (!label) { message.className = 'message error'; message.textContent = 'Give the commitment a name.'; return; }
+    if (start === null || end === null || end <= start) { message.className = 'message error'; message.textContent = 'Set an end time after the start time.'; return; }
+    if (start < DAY_START || end > DAY_END) { message.className = 'message error'; message.textContent = 'Choose times between 8am and 11pm (lights out).'; return; }
+    added.push({ day: day, start: start, end: end, label: label });
+    render();
+    message.textContent = 'Added ' + label + ' on ' + DAYS[day] + ', ' + clock(start) + '–' + clock(end) + '. Week re-planned.';
+  });
+
+  document.getElementById('reset-button').addEventListener('click', function () {
+    added = [];
+    render();
+    message.className = 'message';
+    message.textContent = 'All commitments cleared.';
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
